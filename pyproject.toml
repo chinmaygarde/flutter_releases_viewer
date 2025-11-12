@@ -1,0 +1,11 @@
+[project]
+name = "flutter-releases-viewer"
+version = "0.1.0"
+description = "View Flutter Releases"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.121.1",
+    "python-dateutil>=2.9.0.post0",
+    "requests>=2.32.5",
+]

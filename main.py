@@ -1,5 +1,6 @@
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.responses import RedirectResponse
 from pydantic_core import Url
 from enum import Enum
 import requests
@@ -30,8 +31,12 @@ class ChannelName(str, Enum):
     dev = "dev"
     stable = "stable"
 
+@app.get("/")
+def root():
+    return RedirectResponse(url="/macos/stable", status_code=status.HTTP_302_FOUND)
+
 @app.get("/{platform}/{channel}")
-async def root(platform: PlatformName, channel: ChannelName) -> list[Release]:
+async def releases(platform: PlatformName, channel: ChannelName) -> list[Release]:
     releases : List[Release] = []
     json = requests.get(f"https://storage.googleapis.com/flutter_infra_release/releases/releases_{platform.value}.json").json()
     base_url = urlparse(json["base_url"])

@@ -1,13 +1,13 @@
 from datetime import datetime
 from dateutil.parser import parse
-from enum import Enum
+from enum import Enum, verify
 from fastapi import FastAPI, status
 from fastapi.responses import RedirectResponse
 from functools import lru_cache
 from pydantic import BaseModel
 from pydantic_core import Url
 from typing import List
-from urllib.parse import urlparse, urljoin
+from urllib.parse import scheme_chars, urlparse, urljoin
 
 import requests
 import time
@@ -43,19 +43,52 @@ def get_ttl_hash(seconds=30):
     return round(time.time() / seconds)
 
 def fetch_upstream_json(url: str):
-    return fetch_upstream_json_cached(url=url, ttl_hash=get_ttl_hash())
+    return fetch_upstream_json_cached(url=url,
+                                      ttl_hash=get_ttl_hash())
 
 @app.get("/")
-def root():
-    return RedirectResponse(url="/macos/stable", status_code=status.HTTP_302_FOUND)
+def root0():
+    return RedirectResponse(url="/macos/stable/latest",
+                            status_code=status.HTTP_302_FOUND)
+
+@app.get("/{platform}")
+def root1(platform: PlatformName):
+    return RedirectResponse(url=f"/{platform.value}/stable/latest",
+                            status_code=status.HTTP_302_FOUND)
 
 @app.get("/{platform}/{channel}")
-async def releases(platform: PlatformName, channel: ChannelName) -> list[Release]:
+def root2(platform: PlatformName,
+          channel: ChannelName):
+    return RedirectResponse(url=f"/{platform.value}/{channel.value}/latest",
+                            status_code=status.HTTP_302_FOUND)
+
+@app.get("/{platform}/{channel}/{version}")
+async def releases(platform: PlatformName,
+                    channel: ChannelName,
+                    version: str) -> list[Release]:
     releases : List[Release] = []
     json = fetch_upstream_json(f"https://storage.googleapis.com/flutter_infra_release/releases/releases_{platform.value}.json")
-    base_url = urlparse(json["base_url"])
+    base_url = urlparse(json["base_url"] + '/')
+
+    scm_hash_filter = None
+    version_filter = None
+
+    if version == "all":
+        version_filter = None
+        scm_hash_filter = None
+    elif version == "latest":
+        version_filter = None
+        scm_hash_filter = json["current_release"][channel.value]
+    else:
+        version_filter = version
+        scm_hash_filter = None
+
     for release in json["releases"]:
         if release["channel"] != channel.value:
+            continue
+        if version_filter != None and version_filter != release["version"]:
+            continue
+        if scm_hash_filter != None and scm_hash_filter != release["hash"]:
             continue
         release_record = Release(
             scm_hash=release["hash"],

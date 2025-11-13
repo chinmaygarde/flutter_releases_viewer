@@ -52,18 +52,18 @@ def fetch_upstream_json(url: str):
 def get_root_path(req: Request) -> str:
     return req.scope.get("root_path", "")
 
-@app.get("/")
+@app.get("/", response_model=list[Release])
 def stable_for_macos(req: Request):
     return RedirectResponse(url=f"{get_root_path(req)}/macos/stable/latest",
                             status_code=status.HTTP_302_FOUND)
 
-@app.get("/{platform}")
+@app.get("/{platform}", response_model=list[Release])
 def stable_for_platform(req: Request,
                    platform: PlatformName):
     return RedirectResponse(url=f"{get_root_path(req)}/{platform.value}/stable/latest",
                             status_code=status.HTTP_302_FOUND)
 
-@app.get("/{platform}/{channel}")
+@app.get("/{platform}/{channel}", response_model=list[Release])
 def channel_for_platform(req: Request,
                     platform: PlatformName,
                      channel: ChannelName):

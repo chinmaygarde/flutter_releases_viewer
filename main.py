@@ -12,7 +12,10 @@ from urllib.parse import urlparse, urljoin
 import requests
 import time
 
-app = FastAPI()
+app = FastAPI(
+        title="Flutter Releases Info",
+        summary="Get platform specific metadata for Flutter releases."
+    )
 
 class Release(BaseModel):
     scm_hash: str
@@ -47,18 +50,18 @@ def fetch_upstream_json(url: str):
                                       ttl_hash=get_ttl_hash())
 
 @app.get("/")
-def root0():
+def stable_for_macos():
     return RedirectResponse(url="/macos/stable/latest",
                             status_code=status.HTTP_302_FOUND)
 
 @app.get("/{platform}")
-def root1(platform: PlatformName):
+def stable_for_platform(platform: PlatformName):
     return RedirectResponse(url=f"/{platform.value}/stable/latest",
                             status_code=status.HTTP_302_FOUND)
 
 @app.get("/{platform}/{channel}")
-def root2(platform: PlatformName,
-          channel: ChannelName):
+def channel_for_platform(platform: PlatformName,
+                          channel: ChannelName):
     return RedirectResponse(url=f"/{platform.value}/{channel.value}/latest",
                             status_code=status.HTTP_302_FOUND)
 

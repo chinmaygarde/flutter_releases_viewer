@@ -1,7 +1,7 @@
 from datetime import datetime
 from dateutil.parser import parse
 from enum import Enum
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, status
 from fastapi.responses import RedirectResponse
 from functools import lru_cache
 from pydantic import BaseModel
@@ -49,20 +49,25 @@ def fetch_upstream_json(url: str):
     return fetch_upstream_json_cached(url=url,
                                       ttl_hash=get_ttl_hash())
 
+def get_root_path(req: Request) -> str:
+    return req.scope.get("root_path", "")
+
 @app.get("/")
-def stable_for_macos():
-    return RedirectResponse(url="/macos/stable/latest",
+def stable_for_macos(req: Request):
+    return RedirectResponse(url=f"{get_root_path(req)}/macos/stable/latest",
                             status_code=status.HTTP_302_FOUND)
 
 @app.get("/{platform}")
-def stable_for_platform(platform: PlatformName):
-    return RedirectResponse(url=f"/{platform.value}/stable/latest",
+def stable_for_platform(req: Request,
+                   platform: PlatformName):
+    return RedirectResponse(url=f"{get_root_path(req)}/{platform.value}/stable/latest",
                             status_code=status.HTTP_302_FOUND)
 
 @app.get("/{platform}/{channel}")
-def channel_for_platform(platform: PlatformName,
-                          channel: ChannelName):
-    return RedirectResponse(url=f"/{platform.value}/{channel.value}/latest",
+def channel_for_platform(req: Request,
+                    platform: PlatformName,
+                     channel: ChannelName):
+    return RedirectResponse(url=f"{get_root_path(req)}/{platform.value}/{channel.value}/latest",
                             status_code=status.HTTP_302_FOUND)
 
 @app.get("/{platform}/{channel}/{version}")

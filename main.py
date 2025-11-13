@@ -1,13 +1,16 @@
 from datetime import datetime
+from dateutil.parser import parse
+from enum import Enum
 from fastapi import FastAPI, status
 from fastapi.responses import RedirectResponse
-from pydantic_core import Url
-from enum import Enum
-import requests
+from functools import lru_cache
 from pydantic import BaseModel
+from pydantic_core import Url
 from typing import List
-from dateutil.parser import parse
 from urllib.parse import urlparse, urljoin
+
+import requests
+import time
 
 app = FastAPI()
 
@@ -31,6 +34,17 @@ class ChannelName(str, Enum):
     dev = "dev"
     stable = "stable"
 
+@lru_cache()
+def fetch_upstream_json_cached(url: str, ttl_hash=None):
+    del ttl_hash
+    return requests.get(url).json()
+
+def get_ttl_hash(seconds=30):
+    return round(time.time() / seconds)
+
+def fetch_upstream_json(url: str):
+    return fetch_upstream_json_cached(url=url, ttl_hash=get_ttl_hash())
+
 @app.get("/")
 def root():
     return RedirectResponse(url="/macos/stable", status_code=status.HTTP_302_FOUND)
@@ -38,7 +52,7 @@ def root():
 @app.get("/{platform}/{channel}")
 async def releases(platform: PlatformName, channel: ChannelName) -> list[Release]:
     releases : List[Release] = []
-    json = requests.get(f"https://storage.googleapis.com/flutter_infra_release/releases/releases_{platform.value}.json").json()
+    json = fetch_upstream_json(f"https://storage.googleapis.com/flutter_infra_release/releases/releases_{platform.value}.json")
     base_url = urlparse(json["base_url"])
     for release in json["releases"]:
         if release["channel"] != channel.value:

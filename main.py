@@ -1,13 +1,13 @@
 from datetime import datetime
 from dateutil.parser import parse
-from enum import Enum, verify
+from enum import Enum
 from fastapi import FastAPI, status
 from fastapi.responses import RedirectResponse
 from functools import lru_cache
 from pydantic import BaseModel
 from pydantic_core import Url
 from typing import List
-from urllib.parse import scheme_chars, urlparse, urljoin
+from urllib.parse import urlparse, urljoin
 
 import requests
 import time
@@ -66,7 +66,6 @@ def root2(platform: PlatformName,
 async def releases(platform: PlatformName,
                     channel: ChannelName,
                     version: str) -> list[Release]:
-    releases : List[Release] = []
     json = fetch_upstream_json(f"https://storage.googleapis.com/flutter_infra_release/releases/releases_{platform.value}.json")
     base_url = urlparse(json["base_url"] + '/')
 
@@ -82,6 +81,8 @@ async def releases(platform: PlatformName,
     else:
         version_filter = version
         scm_hash_filter = None
+
+    releases : List[Release] = []
 
     for release in json["releases"]:
         if release["channel"] != channel.value:
@@ -101,5 +102,6 @@ async def releases(platform: PlatformName,
             archive_sha256=release["sha256"],
         )
         releases.append(release_record)
+
     return releases
 

@@ -11,4 +11,4 @@ WORKDIR /app
 RUN uv sync --frozen --no-cache
 
 # Run the application.
-CMD ["uv", "run", "fastapi", "run", "main.py", "--port", "8000"]
+ENTRYPOINT ["uv", "run", "fastapi", "run", "main.py"]
